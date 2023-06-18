@@ -36,6 +36,7 @@ void quick_sort(float a[], int left, int right){
         quick_sort(a, mid+1, right);
     }
 }
+
 int partition(float a[], int left, int right){
     float pivot, swap;
     int i,j;
