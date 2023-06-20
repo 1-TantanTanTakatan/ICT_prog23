@@ -22,7 +22,7 @@ int main(void){
 
     r = sqrt(x*x + y*y);
     theta = atan(y / x) * 180 / M_PI;
-    printf( "(r, theta(deg)) = (%.2f, %.2f)\n" , r, theta);
+    printf( "(r, θ(deg)) = (%.2f, %.2f)\n" , r, theta);
 
     return 0;
 }
