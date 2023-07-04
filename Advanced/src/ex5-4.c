@@ -32,9 +32,10 @@ void vec_swap(int n, float *in1, float *in2){
 }
 
 int mat_inv(int n, float in[n][n], float out[n][n]){
-    float temp[n];
+    float mat[n][n], temp[n];
     for(int i=0; i < n; i++){
         for(int j=0; j < n; j++){
+            mat[i][j] = in[i][j];
             if(i==j){
                 out[i][j] = 1;
             }else{
@@ -44,26 +45,26 @@ int mat_inv(int n, float in[n][n], float out[n][n]){
     }
 
     for(int i=0; i < n; i++){
-        if(in[i][i]==0){
+        if(mat[i][i]==0){
             for(int j=i+1; j < n; j++){
-                if(in[j][j]){
-                    vec_swap(n, in[i], in[j]);
+                if(mat[j][j]){
+                    vec_swap(n, mat[i], mat[j]);
                     vec_swap(n, out[i], out[j]);
                     break;
                 }
             }
         }
 
-        float k = in[i][i];
-        if(vec_div(n, in[i], k, in[i])){
+        float k = mat[i][i];
+        if(vec_div(n, mat[i], k, mat[i])){
             return -1;
         }else{
             vec_div(n, out[i], k, out[i]);
             for(int j=0; j < n; j++){
                 if(i != j){
-                    k = in[j][i];
-                    vec_mult_s(n, in[i], k, temp);
-                    vec_sub(n, in[j], temp, in[j]);
+                    k = mat[j][i];
+                    vec_mult_s(n, mat[i], k, temp);
+                    vec_sub(n, mat[j], temp, mat[j]);
                     vec_mult_s(n, out[i], k, temp);
                     vec_sub(n, out[j], temp, out[j]);
                 }
