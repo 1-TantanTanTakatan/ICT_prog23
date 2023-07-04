@@ -55,7 +55,7 @@ int csv_dq_read(char instr[], char outstr[], int quote_ch, int choffset) {
 #define ADDR_SIZE	100
 #define ADDR_ALL_SIZE	255
 
-#define ZIPTABLE_MAX	10000
+#define ZIPTABLE_MAX	4000
 
 typedef struct _ziptable {
 	int zip;
@@ -64,7 +64,7 @@ typedef struct _ziptable {
 	char addr[ADDR_SIZE];
 } ziptable_t;
 
-int read_from_csv(ziptable_t *ziptable, FILE *infp){  // return the number of data
+int read_from_csv(ziptable_t **ziptable, FILE *infp){  // return the number of data
 	int chofs, zip, n=0;
 	char instr[BUF_SIZE];
 	char zip_char[ZIPCHAR_SIZE];
@@ -73,22 +73,40 @@ int read_from_csv(ziptable_t *ziptable, FILE *infp){  // return the number of da
 	char addr[ADDR_SIZE];
 
 	while (fgets(instr, BUF_SIZE, infp) != NULL) {
+        ziptable_t* zt = malloc(sizeof(ziptable_t));
+
 		chofs = 0;
 		chofs = csv_dq_read(instr, zip_char, '"', chofs);
 		zip = atoi(zip_char);
-		ziptable[n].zip = zip;
+		zt->zip = zip;
 		chofs = skip_delim(instr, ',', chofs);
 		chofs = csv_dq_read(instr, pref, '"', chofs);
-		strcpy(ziptable[n].pref, pref);
+		strcpy(zt->pref, pref);
 		chofs = skip_delim(instr, ',', chofs);
 		chofs = csv_dq_read(instr, city, '"', chofs);
-		strcpy(ziptable[n].city, city);
+		strcpy(zt->city, city);
 		chofs = skip_delim(instr, ',', chofs);
 		chofs = csv_dq_read(instr, addr, '"', chofs);
-		strcpy(ziptable[n].addr, addr);
+		strcpy(zt->addr, addr);
+        ziptable[n] = zt;
 		n++;
 	}
 	return n;
+}
+
+void free_ziptable(int n, ziptable_t* data[]){
+	for(int i=0; i < n; i++){
+		free(data[i]);
+	}
+}
+
+ziptable_t* linearSearch(ziptable_t* data[], int key, int num){
+    for (int i=0; i < num; i++){
+        if(data[i]->zip == key){
+            return data[i];
+        }
+    }
+    return NULL;
 }
 
 void print_ziptable(ziptable_t *ziptable){
@@ -99,21 +117,14 @@ void print_ziptable(ziptable_t *ziptable){
     }
 }
 
-int compare_ziptable(const void *a, const void *b){
-    ziptable_t *A = (ziptable_t *) a;
-    ziptable_t *B = (ziptable_t *) b;
-
-    return A->zip - B->zip;
-}
-
-int main(void) {
-	ziptable_t ziptable[ZIPTABLE_MAX];
+int main(){
+    ziptable_t* ziptable[ZIPTABLE_MAX];
 
 	FILE *infp;
 	int	n;
 	int key;
 
-	if ( ( infp = fopen("test_dat.txt", "r")) == NULL) {
+	if ( ( infp = fopen("tokyo_all_dat.txt", "r")) == NULL) {
 		fprintf(stderr, "File not found\n");
 		exit(EXIT_FAILURE);
 	}
@@ -124,17 +135,16 @@ int main(void) {
 	printf("number of data = %d\n", n);
 	fclose(infp);
 
-	//printf( "Byte size of Array: %d×130000\n" , sizeof(ziptable[0]));
-
-    qsort(ziptable, n, sizeof(ziptable_t), compare_ziptable);
+    //printf( "Byte size of Array: %d\n" , sizeof(ziptable));
 
     while(1){
         scanf( "%d" , &key);
         if(key < 1000000){
+			free_ziptable(n, ziptable);
             break;
         }else{
             printf( "%d: " , key);
-            print_ziptable(bsearch(&key, ziptable, n, sizeof(ziptable_t), compare_ziptable));
+            print_ziptable(linearSearch(ziptable, key, n));
         }
     }
 }
