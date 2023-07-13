@@ -88,6 +88,14 @@ int print_n_node(zipnode_t *head, int n){
     return i;
 }
 
+void free_node(zipnode_t *head){
+    while(head != NULL){
+        zipnode_t* node = head->next;
+        free(head);
+        head = node;
+    }
+}
+
 int read_from_csv(zipnode_t **head, FILE *infp){  // return the number of data
 	int chofs, zip, n=0;
 	char instr[BUF_SIZE];
@@ -152,5 +160,6 @@ int main(){
             break;
         }
     }
+	free_node(head);
     return 0;
 }

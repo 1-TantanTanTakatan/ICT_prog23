@@ -53,11 +53,22 @@ int csv_dq_read(char instr[], char outstr[], int quote_ch, int choffset) {
 #define ADDR_SIZE 100
 #define FULL_ADDR_SIZE 170
 
+#define SIZE 1024
+
 typedef struct _zipnode {
     int zip;
     char fulladdr[FULL_ADDR_SIZE];
     struct _zipnode *next; // 次のノードのポインタ
 } zipnode_t;
+
+unsigned int hash(char *str) {
+    int hashval = 0;
+    while (*str != '\0') {
+    hashval = hashval + *str;
+    str++;
+    }
+    return (hashval % SIZE);
+}
 
 int add_node(zipnode_t **head, int zip, char *fulladdr){
     zipnode_t* node = *head;
@@ -68,13 +79,14 @@ int add_node(zipnode_t **head, int zip, char *fulladdr){
     return 0;
 }
 
-zipnode_t** search_pointer_to_node(zipnode_t **head_p, char *fulladdr){
-    zipnode_t** node = head_p; 
-    while(*node != NULL){
-        if(strcmp((*node)->fulladdr, fulladdr) == 0){
-            return node;
+zipnode_t* search_node(zipnode_t* table[], char *fulladdr){
+    zipnode_t* head = table[hash(fulladdr)];
+
+    while(head != NULL){
+        if(strcmp(head->fulladdr, fulladdr) == 0){
+            return head;
         }
-        node = &(*node)->next;
+        head = head->next;
     }
     return NULL;
 }
@@ -89,15 +101,24 @@ int print_n_node(zipnode_t *head, int n){
     return i;
 }
 
-void free_node(zipnode_t *head){
-    while(head != NULL){
-        zipnode_t* node = head->next;
-        free(head);
-        head = node;
+void free_hashTable(zipnode_t* table[]){
+    for(int i=0; i < SIZE; i++){
+        zipnode_t* head = table[i];
+        while(head != NULL){
+            zipnode_t* node = head->next;
+            free(head);
+            head = node;
+        }
     }
 }
 
-int read_from_csv(zipnode_t **head, FILE *infp){  // return the number of data
+void setup_hashTable(zipnode_t* table[]){
+    for(int i=0; i < SIZE; i++){
+        table[i] = NULL;
+    }
+}
+
+int read_from_csv(zipnode_t* table[], FILE *infp){  // return the number of data
 	int chofs, zip, n=0;
 	char instr[BUF_SIZE];
 	char zip_char[ZIPCHAR_SIZE];
@@ -105,6 +126,8 @@ int read_from_csv(zipnode_t **head, FILE *infp){  // return the number of data
 	char city[CITY_SIZE];
 	char addr[ADDR_SIZE];
     char fulladdr[FULL_ADDR_SIZE];
+
+    setup_hashTable(table);
 
 	while (fgets(instr, BUF_SIZE, infp) != NULL) {
 		chofs = 0;
@@ -121,14 +144,14 @@ int read_from_csv(zipnode_t **head, FILE *infp){  // return the number of data
 		chofs = skip_delim(instr, ',', chofs);
 		chofs = csv_dq_read(instr, addr, '"', chofs);
 		strcat(fulladdr, addr);
-        add_node(head, zip, fulladdr);
+        add_node(&table[hash(fulladdr)], zip, fulladdr);
 		n++;
 	}
 	return n;
 }
 
 int main(){
-    zipnode_t* head = NULL;
+    zipnode_t* table[SIZE];
 
 	FILE *infp;
 	int	n;
@@ -141,24 +164,23 @@ int main(){
 /* ---------------------------------- */
 /*    read csv file                   */
 /* ---------------------------------- */
-	n = read_from_csv(&head, infp);
+	n = read_from_csv(table, infp);
 	printf("number of data = %d\n", n);
 	fclose(infp);
 
-    print_n_node(head, 5);
+    for(int i=0; i < 3; i++){
+        printf( "data with hash(fulladdr)=%d:\n" , i);
+        print_n_node(table[i], 5);
+    }
 
     while(1){
         printf( "full address ? > " );
         fgets(key, sizeof(key), stdin);
         key[strlen(key)-1] = '\0';
         if(strcmp(key, "exit")){
-            zipnode_t** result = search_pointer_to_node(&head, key);
+            zipnode_t* result = search_node(table, key);
             if(result != NULL){
-                printf( "zipcode = %d\n" , (*result)->zip);
-                zipnode_t* node = (*result)->next;
-                free(*result);
-                *result = node;
-                print_n_node(head, 5);
+                printf( "zipcode = %d\n" , result->zip);
             }else{
                 printf( "no data\n" );
             }
@@ -167,6 +189,6 @@ int main(){
             break;
         }
     }
-	free_node(head);
+	free_hashTable(table);
     return 0;
 }
