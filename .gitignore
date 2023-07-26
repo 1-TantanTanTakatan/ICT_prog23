@@ -1,2 +1,7 @@
+.DS_STORE
+
 .vscode/*
 *.exe
+*.out
+
+*.dSYM/
